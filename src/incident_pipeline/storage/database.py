@@ -1,10 +1,11 @@
 """SQLite storage engine with FTS5 full-text search and analytical aggregation."""
 
-from datetime import datetime
 import json
-from pathlib import Path
 import sqlite3
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
 from incident_pipeline.models import IncidentRecord, RiskCategory, SeverityLevel, SourceType
 
 
@@ -25,7 +26,7 @@ class IncidentDatabase:
         """Initialize database schema, indices, and FTS5 full-text virtual table."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Primary incidents table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS incidents (
@@ -50,9 +51,15 @@ class IncidentDatabase:
 
             # Indexing for fast analytical grouping
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_incidents_source ON incidents(source);")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_incidents_primary_cat ON incidents(primary_category);")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_incidents_severity ON incidents(severity);")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_incidents_published ON incidents(published_at);")
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_incidents_primary_cat ON incidents(primary_category);"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_incidents_severity ON incidents(severity);"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_incidents_published ON incidents(published_at);"
+            )
 
             # FTS5 full-text search virtual table
             cursor.execute("""
@@ -108,34 +115,37 @@ class IncidentDatabase:
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
             INSERT INTO incidents (
                 id, title, url, source, source_id, authors, published_at,
                 summary, content, risk_categories, primary_category, severity,
                 tags, confidence_score, raw_metadata, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                record.id,
-                record.title,
-                record.url,
-                record.source.value,
-                record.source_id,
-                json.dumps(record.authors),
-                record.published_at.isoformat(),
-                record.summary,
-                record.content,
-                json.dumps([c.value for c in record.risk_categories]),
-                primary_category,
-                record.severity.value,
-                json.dumps(record.tags),
-                record.confidence_score,
-                json.dumps(record.raw_metadata),
-                datetime.utcnow().isoformat()
-            ))
+            """,
+                (
+                    record.id,
+                    record.title,
+                    record.url,
+                    record.source.value,
+                    record.source_id,
+                    json.dumps(record.authors),
+                    record.published_at.isoformat(),
+                    record.summary,
+                    record.content,
+                    json.dumps([c.value for c in record.risk_categories]),
+                    primary_category,
+                    record.severity.value,
+                    json.dumps(record.tags),
+                    record.confidence_score,
+                    json.dumps(record.raw_metadata),
+                    datetime.utcnow().isoformat(),
+                ),
+            )
             conn.commit()
             return True
 
-    def save_records(self, records: List[IncidentRecord]) -> Tuple[int, int]:
+    def save_records(self, records: list[IncidentRecord]) -> tuple[int, int]:
         """Bulk save records. Returns (inserted_count, skipped_duplicates_count)."""
         inserted = 0
         skipped = 0
@@ -149,8 +159,10 @@ class IncidentDatabase:
     def _row_to_record(self, row: sqlite3.Row) -> IncidentRecord:
         """Map a database row to an IncidentRecord model."""
         raw_cats = json.loads(row["risk_categories"])
-        categories = [RiskCategory(c) for c in raw_cats] if raw_cats else [RiskCategory.GENERAL_SAFETY]
-        
+        categories = (
+            [RiskCategory(c) for c in raw_cats] if raw_cats else [RiskCategory.GENERAL_SAFETY]
+        )
+
         return IncidentRecord(
             id=row["id"],
             title=row["title"],
@@ -165,20 +177,16 @@ class IncidentDatabase:
             severity=SeverityLevel(row["severity"]),
             tags=json.loads(row["tags"]),
             confidence_score=row["confidence_score"],
-            raw_metadata=json.loads(row["raw_metadata"]) if row["raw_metadata"] else {}
+            raw_metadata=json.loads(row["raw_metadata"]) if row["raw_metadata"] else {},
         )
 
     def search(
-        self,
-        query: str,
-        category: Optional[str] = None,
-        severity: Optional[str] = None,
-        limit: int = 50
-    ) -> List[IncidentRecord]:
+        self, query: str, category: str | None = None, severity: str | None = None, limit: int = 50
+    ) -> list[IncidentRecord]:
         """Perform full-text search across records using FTS5."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Clean and sanitize FTS query
             sanitized = "".join(c for c in query if c.isalnum() or c in " *_-").strip()
             if not sanitized:
@@ -189,7 +197,7 @@ class IncidentDatabase:
             JOIN incidents_fts fts ON i.id = fts.id
             WHERE incidents_fts MATCH ?
             """
-            params: List[Any] = [sanitized]
+            params: list[Any] = [sanitized]
 
             if category:
                 sql += " AND i.primary_category = ?"
@@ -206,14 +214,14 @@ class IncidentDatabase:
             rows = cursor.fetchall()
             return [self._row_to_record(r) for r in rows]
 
-    def get_all(self, limit: int = 500) -> List[IncidentRecord]:
+    def get_all(self, limit: int = 500) -> list[IncidentRecord]:
         """Retrieve recent records ordered by published date."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM incidents ORDER BY published_at DESC LIMIT ?", (limit,))
             return [self._row_to_record(r) for r in cursor.fetchall()]
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Compute aggregated distribution of incidents and safety research."""
         with self._get_connection() as conn:
             cursor = conn.cursor()

@@ -1,7 +1,10 @@
 """Unit tests for URL normalization and canonical ID deduplication."""
 
-import pytest
-from incident_pipeline.processors.deduplicator import generate_record_id, normalize_title, normalize_url
+from incident_pipeline.processors.deduplicator import (
+    generate_record_id,
+    normalize_title,
+    normalize_url,
+)
 
 
 def test_normalize_url_strips_tracking():

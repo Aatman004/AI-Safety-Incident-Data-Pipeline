@@ -2,7 +2,9 @@
 
 from datetime import datetime
 from pathlib import Path
+
 import pytest
+
 from incident_pipeline.models import IncidentRecord, RiskCategory, SeverityLevel, SourceType
 from incident_pipeline.storage.database import IncidentDatabase
 

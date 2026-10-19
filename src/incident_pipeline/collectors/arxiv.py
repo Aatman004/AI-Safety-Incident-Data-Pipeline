@@ -1,10 +1,11 @@
 """arXiv API collector for AI Safety and Alignment research preprints."""
 
-from datetime import datetime
 import re
-from typing import List
+from datetime import datetime
+
 import feedparser
 import httpx
+
 from incident_pipeline.collectors.base import BaseCollector
 from incident_pipeline.models import IncidentRecord, SourceType
 from incident_pipeline.processors.deduplicator import generate_record_id, normalize_url
@@ -37,7 +38,7 @@ class ArxivCollector(BaseCollector):
         category_clause = "(cat:cs.AI OR cat:cs.LG OR cat:cs.CR OR cat:cs.CY)"
         return f"{category_clause} AND ({keyword_clause})"
 
-    def collect(self, limit: int = 25) -> List[IncidentRecord]:
+    def collect(self, limit: int = 25) -> list[IncidentRecord]:
         """Query arXiv and transform papers into normalized IncidentRecord models."""
         query = self._build_query()
         params = {
@@ -53,11 +54,11 @@ class ArxivCollector(BaseCollector):
                 response = client.get(self.API_URL, params=params)
                 response.raise_for_status()
                 feed = feedparser.parse(response.text)
-        except Exception as e:
+        except Exception:
             # Return empty list on network error, allowing caller to handle
             return []
 
-        records: List[IncidentRecord] = []
+        records: list[IncidentRecord] = []
         for entry in feed.entries:
             title = entry.title.replace("\n", " ").strip()
             summary = entry.summary.replace("\n", " ").strip()
@@ -93,7 +94,9 @@ class ArxivCollector(BaseCollector):
                 severity=severity,
                 tags=tags,
                 confidence_score=confidence,
-                raw_metadata={"arxiv_categories": [t.get("term") for t in getattr(entry, "tags", [])]}
+                raw_metadata={
+                    "arxiv_categories": [t.get("term") for t in getattr(entry, "tags", [])]
+                },
             )
             records.append(record)
 

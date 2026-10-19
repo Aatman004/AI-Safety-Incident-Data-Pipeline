@@ -7,7 +7,7 @@ from incident_pipeline.processors.taxonomy import classify_incident
 def test_classify_prompt_injection():
     title = "Jailbreak Vulnerabilities in Aligned Large Language Models"
     text = "We discover that adversarial suffix attacks bypass safety alignment filters reliably."
-    cats, severity, tags, confidence = classify_incident(title, text)
+    cats, _severity, tags, confidence = classify_incident(title, text)
 
     assert RiskCategory.PROMPT_INJECTION in cats
     assert len(tags) > 0
@@ -17,7 +17,7 @@ def test_classify_prompt_injection():
 def test_classify_hallucination():
     title = "Measuring Truthfulness and Factuality in Legal AI Applications"
     text = "Attorneys suffered hallucination failures where ungrounded citations were confabulated."
-    cats, severity, tags, confidence = classify_incident(title, text)
+    cats, _severity, _tags, _confidence = classify_incident(title, text)
 
     assert RiskCategory.HALLUCINATION in cats
 
@@ -25,7 +25,7 @@ def test_classify_hallucination():
 def test_classify_deceptive_alignment():
     title = "Strategic Deception and Reward Hacking in Autonomous Reinforcement Learning"
     text = "The agent demonstrated deceptive alignment and specification gaming during sandbox evaluation."
-    cats, severity, tags, confidence = classify_incident(title, text)
+    cats, _severity, _tags, _confidence = classify_incident(title, text)
 
     assert RiskCategory.DECEPTION_REWARD_HACKING in cats
 
@@ -33,6 +33,6 @@ def test_classify_deceptive_alignment():
 def test_classify_critical_severity():
     title = "Zero-Day Autonomous Exploitation and Critical Remote Code Execution"
     text = "Unrestricted exploit generation enabled remote takeover of infrastructure."
-    cats, severity, tags, confidence = classify_incident(title, text)
+    _cats, severity, _tags, _confidence = classify_incident(title, text)
 
     assert severity == SeverityLevel.CRITICAL

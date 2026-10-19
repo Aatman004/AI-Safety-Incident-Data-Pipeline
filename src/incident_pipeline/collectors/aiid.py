@@ -1,8 +1,10 @@
 """Collector for the AI Incident Database (AIID) and empirical AI safety failures."""
 
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
+
 import httpx
+
 from incident_pipeline.collectors.base import BaseCollector
 from incident_pipeline.models import IncidentRecord, SourceType
 from incident_pipeline.processors.deduplicator import generate_record_id, normalize_url
@@ -59,7 +61,7 @@ class AIIDCollector(BaseCollector):
         },
     ]
 
-    def _convert_item(self, item: Dict[str, Any]) -> IncidentRecord:
+    def _convert_item(self, item: dict[str, Any]) -> IncidentRecord:
         title = item["title"]
         url = normalize_url(item["url"])
         summary = item.get("description", "")
@@ -82,10 +84,10 @@ class AIIDCollector(BaseCollector):
             severity=severity,
             tags=tags,
             confidence_score=confidence,
-            raw_metadata={"raw_incident_id": item.get("incident_id")}
+            raw_metadata={"raw_incident_id": item.get("incident_id")},
         )
 
-    def collect(self, limit: int = 25) -> List[IncidentRecord]:
+    def collect(self, limit: int = 25) -> list[IncidentRecord]:
         """Attempt to fetch latest live incidents from AIID, falling back to curated records."""
         try:
             with httpx.Client(timeout=10.0, follow_redirects=True) as client:

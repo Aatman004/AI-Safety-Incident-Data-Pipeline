@@ -1,7 +1,7 @@
 """Base collector class for AI safety data sources."""
 
 from abc import ABC, abstractmethod
-from typing import List
+
 from incident_pipeline.models import IncidentRecord
 
 
@@ -11,6 +11,5 @@ class BaseCollector(ABC):
     name: str = "base"
 
     @abstractmethod
-    def collect(self, limit: int = 25) -> List[IncidentRecord]:
+    def collect(self, limit: int = 25) -> list[IncidentRecord]:
         """Fetch and return normalized incident records up to the specified limit."""
-        pass

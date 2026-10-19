@@ -1,11 +1,10 @@
 """Rule-based and heuristic AI Safety threat taxonomy classifier."""
 
 import re
-from typing import Dict, List, Set, Tuple
+
 from incident_pipeline.models import RiskCategory, SeverityLevel
 
-
-TAXONOMY_PATTERNS: Dict[RiskCategory, List[str]] = {
+TAXONOMY_PATTERNS: dict[RiskCategory, list[str]] = {
     RiskCategory.PROMPT_INJECTION: [
         r"\bjailbreak(?:s|ing)?\b",
         r"\bprompt injection\b",
@@ -86,33 +85,44 @@ TAXONOMY_PATTERNS: Dict[RiskCategory, List[str]] = {
     ],
 }
 
-SEVERITY_KEYWORDS: Dict[SeverityLevel, List[str]] = {
+SEVERITY_KEYWORDS: dict[SeverityLevel, list[str]] = {
     SeverityLevel.CRITICAL: [
-        r"\bcritical\b", r"\bzero-day\b", r"\bcbrn\b", r"\bcatastrophic\b",
-        r"\bunrestricted\b", r"\bcomplete bypass\b", r"\bremote code execution\b"
+        r"\bcritical\b",
+        r"\bzero-day\b",
+        r"\bcbrn\b",
+        r"\bcatastrophic\b",
+        r"\bunrestricted\b",
+        r"\bcomplete bypass\b",
+        r"\bremote code execution\b",
     ],
     SeverityLevel.HIGH: [
-        r"\bhigh\b", r"\bexploit\b", r"\buniversal jailbreak\b",
-        r"\bpersistent failure\b", r"\bsystemic risk\b", r"\bsevere\b"
+        r"\bhigh\b",
+        r"\bexploit\b",
+        r"\buniversal jailbreak\b",
+        r"\bpersistent failure\b",
+        r"\bsystemic risk\b",
+        r"\bsevere\b",
     ],
     SeverityLevel.MEDIUM: [
-        r"\bmoderate\b", r"\bmedium\b", r"\bpartial\b", r"\bdegradation\b",
-        r"\blimited\b", r"\bhallucination\b"
+        r"\bmoderate\b",
+        r"\bmedium\b",
+        r"\bpartial\b",
+        r"\bdegradation\b",
+        r"\blimited\b",
+        r"\bhallucination\b",
     ],
-    SeverityLevel.LOW: [
-        r"\blow\b", r"\bminor\b", r"\btheoretical\b", r"\bpreliminary\b"
-    ],
+    SeverityLevel.LOW: [r"\blow\b", r"\bminor\b", r"\btheoretical\b", r"\bpreliminary\b"],
 }
 
 
 def classify_incident(
     title: str, text: str
-) -> Tuple[List[RiskCategory], SeverityLevel, List[str], float]:
+) -> tuple[list[RiskCategory], SeverityLevel, list[str], float]:
     """Classify incident text against AI safety risk taxonomies and assess severity."""
     combined_content = f"{title} {text}".lower()
-    matched_categories: Set[RiskCategory] = set()
-    extracted_tags: Set[str] = set()
-    category_scores: Dict[RiskCategory, int] = {}
+    matched_categories: set[RiskCategory] = set()
+    extracted_tags: set[str] = set()
+    category_scores: dict[RiskCategory, int] = {}
 
     for category, patterns in TAXONOMY_PATTERNS.items():
         score = 0
@@ -142,9 +152,7 @@ def classify_incident(
     confidence = min(0.95, 0.65 + 0.1 * min(3, len(category_scores)))
 
     sorted_categories = sorted(
-        list(matched_categories),
-        key=lambda c: category_scores.get(c, 0),
-        reverse=True
+        matched_categories, key=lambda c: category_scores.get(c, 0), reverse=True
     )
 
-    return sorted_categories, assessed_severity, sorted(list(extracted_tags)), confidence
+    return sorted_categories, assessed_severity, sorted(extracted_tags), confidence

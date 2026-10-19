@@ -1,10 +1,11 @@
 """Collector for AI Safety community forums and research RSS feeds."""
 
 from datetime import datetime
-from typing import List
-from bs4 import BeautifulSoup
+
 import feedparser
 import httpx
+from bs4 import BeautifulSoup
+
 from incident_pipeline.collectors.base import BaseCollector
 from incident_pipeline.models import IncidentRecord, SourceType
 from incident_pipeline.processors.deduplicator import generate_record_id, normalize_url
@@ -28,9 +29,9 @@ class SafetyRSSCollector(BaseCollector):
         soup = BeautifulSoup(html_content, "html.parser")
         return soup.get_text(separator=" ", strip=True)
 
-    def collect(self, limit: int = 25) -> List[IncidentRecord]:
+    def collect(self, limit: int = 25) -> list[IncidentRecord]:
         """Fetch items from community safety feeds."""
-        records: List[IncidentRecord] = []
+        records: list[IncidentRecord] = []
         per_feed_limit = max(5, limit // len(self.FEEDS))
 
         for feed_url, source_type in self.FEEDS:
@@ -74,7 +75,7 @@ class SafetyRSSCollector(BaseCollector):
                     severity=severity,
                     tags=tags,
                     confidence_score=confidence,
-                    raw_metadata={"feed_url": feed_url}
+                    raw_metadata={"feed_url": feed_url},
                 )
                 records.append(record)
 
