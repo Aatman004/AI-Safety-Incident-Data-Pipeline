@@ -60,6 +60,27 @@ class SafetyRSSCollector(BaseCollector):
                     pub_date = datetime(*entry.published_parsed[:6])
 
                 categories, severity, tags, confidence = classify_incident(title, clean_text)
+
+                # Filter out generic philosophy essays: require empirical vulnerability/incident indicators
+                incident_indicators = (
+                    "jailbreak",
+                    "prompt injection",
+                    "adversarial",
+                    "exploit",
+                    "breach",
+                    "vulnerability",
+                    "cve",
+                    "malware",
+                    "sandbagging",
+                    "backdoor",
+                    "sleeper agent",
+                    "data leak",
+                    "poisoning",
+                )
+                text_lower = (title + " " + clean_text[:500]).lower()
+                if confidence < 0.80 or not any(ind in text_lower for ind in incident_indicators):
+                    continue
+
                 rec_id = generate_record_id(canonical_url, title)
 
                 record = IncidentRecord(
@@ -80,3 +101,4 @@ class SafetyRSSCollector(BaseCollector):
                 records.append(record)
 
         return records[:limit]
+

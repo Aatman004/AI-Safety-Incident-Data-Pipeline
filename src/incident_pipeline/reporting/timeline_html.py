@@ -149,6 +149,9 @@ def get_merged_timeline_events(db_path: Optional[str] = None) -> List[Dict[str, 
             for r in db_records:
                 if r.id in events_map:
                     continue
+                # Exclude discussion forum essays: timeline is strictly for incidents & empirical research
+                if r.source.value in ("alignment_forum", "lesswrong"):
+                    continue
                 # Filter low confidence or casual essays
                 if r.confidence_score < 0.70:
                     continue

@@ -39,10 +39,10 @@ jobs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add docs/ reports/ data/
+        git add docs/index.html
         if git diff --staged --quiet; then
           echo "No new changes or incidents discovered in this cycle."
         else
-          git commit -m "chore(automated): update AI safety incident data & timeline [skip ci]"
+          git commit -m "update safety timeline [skip ci]"
           git push
         fi
