@@ -224,5 +224,26 @@ def export(
         console.print(f"[bold green]Exported {len(records)} records to JSON:[/bold green] {output}")
 
 
+@app.command()
+def timeline(
+    output: str = typer.Option(
+        "reports/ai_safety_timeline.html",
+        "--output",
+        "-o",
+        help="Output filepath for HTML timeline visualization",
+    ),
+):
+    """Generate an interactive HTML timeline of AI Safety incidents since ChatGPT."""
+    from incident_pipeline.reporting.timeline_html import build_timeline_html
+
+    html_content = build_timeline_html()
+    out_path = Path(output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(html_content, encoding="utf-8")
+    console.print(
+        f"[bold green]Interactive AI Safety Timeline successfully generated:[/bold green] [white]{output}[/white]"
+    )
+
+
 if __name__ == "__main__":
     app()
