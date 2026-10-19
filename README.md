@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-An automated data ingestion, threat taxonomy classification, and analytical storage pipeline that monitors global AI safety research, vulnerability reports, and near-miss incidents. Built to support empirical alignment research, risk trend analysis, and frontier safety governance.
+An automated data ingestion, threat taxonomy classification, and analytical storage pipeline that monitors global AI safety research, vulnerability reports, and near-miss incidents. Built to support empirical alignment research, risk trend analysis, and frontier safety governance. Also because I couldn't find an existing data pipeline.
 
 ---
 
