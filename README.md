@@ -1,6 +1,6 @@
 # AI Safety Incident & Threat Intelligence Pipeline
 
-[![CI](https://github.com/aatmangupta/ai-safety-incident-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/aatmangupta/ai-safety-incident-pipeline/actions/workflows/ci.yml)
+[![CI](https://github.com/Aatman004/AI-Safety-Incident-Data-Pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Aatman004/AI-Safety-Incident-Data-Pipeline/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
@@ -79,8 +79,8 @@ Records are mapped into categorized safety threat vectors:
 ### Setup Virtual Environment
 ```bash
 # Clone the repository
-git clone https://github.com/aatmangupta/ai-safety-incident-pipeline.git
-cd ai-safety-incident-pipeline
+git clone https://github.com/Aatman004/AI-Safety-Incident-Data-Pipeline.git
+cd AI-Safety-Incident-Data-Pipeline
 
 # Create virtual environment
 python -m venv .venv
