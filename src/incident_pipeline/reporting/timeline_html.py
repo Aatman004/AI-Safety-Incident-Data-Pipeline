@@ -1,15 +1,133 @@
 """Generates an intentional, fluid, and polished interactive HTML timeline of AI Safety incidents."""
 
 import json
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from incident_pipeline.storage.database import IncidentDatabase
 from incident_pipeline.timeline_data import LANDMARK_AI_SAFETY_INCIDENTS
 
 
+def adaptively_summarize(title: str, text: str, category: str) -> Tuple[str, str, str]:
+    """Intelligently condense raw text or paper abstracts into an adaptive summary, root mechanism, and safety takeaway."""
+    if not text:
+        return (
+            title,
+            "Adversarial vulnerability in system safety boundaries.",
+            "Requires defensive isolation and pre-deployment evaluation.",
+        )
+
+    clean_text = text.strip()
+    clean_text = re.sub(
+        r"^(TLDR|Summary|Abstract|Executive Summary|Introduction)[:\s\-]+",
+        "",
+        clean_text,
+        flags=re.IGNORECASE,
+    )
+    clean_text = re.sub(r"^\(Originally.*?\)\s*", "", clean_text)
+    clean_text = re.sub(r"^Many thanks to.*?\.\s*", "", clean_text)
+    clean_text = re.sub(r"^Linkpost to.*?\.\s*", "", clean_text)
+    clean_text = re.sub(r"\[\d+\]", "", clean_text)
+    clean_text = re.sub(r"https?://\S+", "", clean_text)
+    clean_text = re.sub(r"\s+", " ", clean_text).strip()
+
+    sentences = re.split(r"(?<=[.!?])\s+", clean_text)
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 15]
+
+    finding_keywords = [
+        "we show",
+        "we find",
+        "we demonstrate",
+        "we introduce",
+        "reveals that",
+        "proves that",
+        "shows that",
+        "findings show",
+        "experiments show",
+        "vulnerability",
+        "vulnerabilities",
+        "bypassed",
+        "jailbreak",
+        "hijacked",
+        "sandbagging",
+        "deception",
+        "injection",
+        "attack",
+        "compromise",
+        "risk",
+    ]
+
+    selected = []
+    for s in sentences:
+        s_lower = s.lower()
+        if any(k in s_lower for k in finding_keywords):
+            selected.append(s)
+            if len(" ".join(selected)) > 140:
+                break
+
+    if not selected and sentences:
+        selected = [sentences[0]]
+        if len(sentences) > 1 and len(selected[0]) < 90:
+            selected.append(sentences[1])
+
+    summary = " ".join(selected) if selected else clean_text[:180]
+
+    # Trim to max ~210 chars at word boundary if needed
+    if len(summary) > 220:
+        clipped = summary[:210]
+        last_space = clipped.rfind(" ")
+        if last_space > 120:
+            clipped = clipped[:last_space]
+        if not clipped.endswith((".", "!", "?")):
+            clipped += "..."
+        summary = clipped
+
+    t_lower = (title + " " + text).lower()
+    if "mobile" in t_lower or "cross-modal" in t_lower or "multimodal" in t_lower:
+        mechanism = (
+            "Adversarial multimodal visual and indirect tool inputs bypassing text-only defenses."
+        )
+        takeaway = "Autonomous agents require hardened sandboxing, capability caps, and zero ambient trust."
+    elif "prompt injection" in t_lower or "indirect" in t_lower or "ipi" in t_lower:
+        mechanism = (
+            "Untrusted external payload execution inside autonomous agent tool-calling contexts."
+        )
+        takeaway = "Input data and control flow must be cryptographically partitioned."
+    elif (
+        "privilege" in t_lower
+        or "coding agent" in t_lower
+        or "escape" in t_lower
+        or "abuse" in t_lower
+    ):
+        mechanism = "Agent permission boundary escalation permitting unauthorized execution."
+        takeaway = "Autonomous developer agents require strict execution sandboxes and zero ambient trust."
+    elif "sandbagging" in t_lower or "decepti" in t_lower or "sleeper" in t_lower:
+        mechanism = "Strategic capability concealment to circumvent safety screening filters."
+        takeaway = "Black-box evaluations cannot guarantee safety against strategically aware models."
+    elif "jailbreak" in t_lower or "echo" in t_lower or "multi-turn" in t_lower:
+        mechanism = (
+            "Iterative feedback and token optimization overcoming post-training refusal boundaries."
+        )
+        takeaway = "Static refusal alignment degrades rapidly under multi-turn adversarial pressure."
+    elif "poison" in t_lower or "kv" in t_lower or "cache" in t_lower:
+        mechanism = "Cache state poisoning corrupting model intermediate representations."
+        takeaway = "Multi-tenant inference architectures require strict cache isolation guarantees."
+    elif "hallucinat" in t_lower or "legal" in t_lower or "avianca" in t_lower:
+        mechanism = "Stochastic generation without grounded factual verification."
+        takeaway = "High-confidence hallucinations require deterministic factual grounding."
+    elif "corrigib" in t_lower or "debate" in t_lower or "alignment" in t_lower:
+        mechanism = "Theoretical divergence between training reward objectives and human intent."
+        takeaway = "Scalable oversight protocols require verifiable formal constraints."
+    else:
+        mechanism = "Systemic failure in post-training safety alignment constraints."
+        takeaway = "Empirical verification must replace assumption of static model compliance."
+
+    return summary, mechanism, takeaway
+
+
 def get_merged_timeline_events(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Merge landmark historical events with live ingested database records."""
+    """Merge landmark historical events with live ingested database records using adaptive summarization."""
     events_map: Dict[str, Dict[str, Any]] = {
         item["id"]: dict(item) for item in LANDMARK_AI_SAFETY_INCIDENTS
     }
@@ -19,31 +137,58 @@ def get_merged_timeline_events(db_path: Optional[str] = None) -> List[Dict[str, 
         try:
             db = IncidentDatabase(db_path)
             db_records = db.get_all(limit=500)
+            noise_patterns = [
+                "what's the date",
+                "frog and toad",
+                "cat-belling",
+                "on social reality",
+                "a critical look at lean4",
+            ]
+            landmark_titles = {item["title"].lower() for item in LANDMARK_AI_SAFETY_INCIDENTS}
+
             for r in db_records:
-                if r.id not in events_map:
-                    events_map[r.id] = {
-                        "id": r.id,
-                        "date": r.published_at.strftime("%Y-%m-%d"),
-                        "year": r.published_at.year,
-                        "title": r.title,
-                        "category": (
-                            r.risk_categories[0].value
-                            if r.risk_categories
-                            else "general_alignment_safety"
-                        ),
-                        "category_label": (
-                            r.risk_categories[0].value.replace("_", " ").title()
-                            if r.risk_categories
-                            else "General Alignment"
-                        ),
-                        "severity": r.severity.value,
-                        "source": r.source.value.upper(),
-                        "url": r.url,
-                        "what_happened": r.summary,
-                        "mechanism": "Automated ingestion pipeline classification.",
-                        "takeaway": f"Safety impact classified as {r.severity.value.upper()} risk with {r.confidence_score * 100:.0f}% confidence.",
-                        "tags": r.tags[:5] if r.tags else ["AI Safety"],
-                    }
+                if r.id in events_map:
+                    continue
+                # Filter low confidence or casual essays
+                if r.confidence_score < 0.70:
+                    continue
+                if any(p in r.title.lower() for p in noise_patterns):
+                    continue
+
+                # Check if duplicate of an existing landmark incident
+                r_words = set(re.findall(r"\w{4,}", r.title.lower()))
+                is_dup = False
+                for lt in landmark_titles:
+                    lt_words = set(re.findall(r"\w{4,}", lt))
+                    if len(r_words & lt_words) >= 3:
+                        is_dup = True
+                        break
+                if is_dup:
+                    continue
+
+                cat = (
+                    r.risk_categories[0].value
+                    if r.risk_categories
+                    else "general_alignment_safety"
+                )
+                summary, mech, takeaway = adaptively_summarize(r.title, r.summary, cat)
+
+                events_map[r.id] = {
+                    "id": r.id,
+                    "date": r.published_at.strftime("%Y-%m-%d"),
+                    "year": r.published_at.year,
+                    "title": r.title,
+                    "category": cat,
+                    "category_label": cat.replace("_", " ").title(),
+                    "severity": r.severity.value,
+                    "source": r.source.value.upper(),
+                    "url": r.url,
+                    "what_happened": summary,
+                    "mechanism": mech,
+                    "takeaway": takeaway,
+                    "full_text": r.summary,
+                    "tags": r.tags[:5] if r.tags else ["AI Safety"],
+                }
         except Exception:
             pass
 
@@ -162,8 +307,8 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
           <span class="text-xs font-medium text-slate-400">Total Tracked</span>
           <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">2022-2026</span>
         </div>
-        <div class="text-2xl sm:text-3xl font-extrabold text-white mt-2" id="kpi-total">35</div>
-        <div class="text-xs text-slate-400 mt-1">Curated landmark events</div>
+        <div class="text-2xl sm:text-3xl font-extrabold text-white mt-2" id="kpi-total">45</div>
+        <div class="text-xs text-slate-400 mt-1">Live empirical incidents</div>
       </div>
 
       <div class="glass-card rounded-2xl p-4">
@@ -180,7 +325,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
           <span class="text-xs font-medium text-slate-400">Prompt Injections</span>
           <span class="w-2 h-2 rounded-full bg-amber-500"></span>
         </div>
-        <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 mt-2" id="kpi-injection">10</div>
+        <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 mt-2" id="kpi-injection">15</div>
         <div class="text-xs text-slate-400 mt-1">Direct & indirect exploits</div>
       </div>
 
@@ -264,7 +409,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
 
     <!-- Active Filter Counter Banner -->
     <div class="flex items-center justify-between text-xs text-slate-400 mb-6 px-1">
-      <div>Showing <span id="count-visible" class="font-bold text-white">35</span> incidents</div>
+      <div>Showing <span id="count-visible" class="font-bold text-white">45</span> incidents</div>
       <div id="filter-state" class="text-slate-400">Filter: <span class="text-indigo-400">All Time</span></div>
     </div>
 
@@ -299,6 +444,17 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
       low: {{ badge: 'bg-slate-500/15 text-slate-400 border-slate-500/30', dot: 'bg-slate-400 ring-slate-500/30' }}
     }};
 
+    function getAdaptiveSummary(text, maxChars = 210) {{
+      if (!text) return '';
+      text = text.trim();
+      if (text.length <= maxChars) return text;
+      let clipped = text.slice(0, maxChars);
+      const lastPeriod = clipped.lastIndexOf('.');
+      if (lastPeriod > 80) return clipped.slice(0, lastPeriod + 1);
+      const lastSpace = clipped.lastIndexOf(' ');
+      return (lastSpace > 60 ? clipped.slice(0, lastSpace) : clipped) + '...';
+    }}
+
     function updateKPIs() {{
       const total = rawEvents.length;
       const criticalCount = rawEvents.filter(e => e.severity === 'critical').length;
@@ -328,6 +484,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
         const what = (item.what_happened || item.summary || '').toLowerCase();
         const mech = (item.mechanism || '').toLowerCase();
         const take = (item.takeaway || item.impact || '').toLowerCase();
+        const full = (item.full_text || '').toLowerCase();
         const src = (item.source || '').toLowerCase();
 
         const matchSearch = !q ||
@@ -335,6 +492,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
           what.includes(q) ||
           mech.includes(q) ||
           take.includes(q) ||
+          full.includes(q) ||
           src.includes(q) ||
           (item.tags && item.tags.some(t => t.toLowerCase().includes(q)));
 
@@ -367,9 +525,12 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
       filtered.forEach((item, index) => {{
         const isEven = index % 2 === 0;
         const sev = severityConfig[item.severity] || severityConfig.medium;
-        const synopsis = item.what_happened || item.summary || '';
+        const rawSynopsis = item.what_happened || item.summary || '';
+        const synopsis = getAdaptiveSummary(rawSynopsis, 210);
         const mechanism = item.mechanism || '';
         const takeaway = item.takeaway || item.impact || '';
+        const fullText = item.full_text || (rawSynopsis.length > synopsis.length ? rawSynopsis : '');
+        const hasFullText = Boolean(fullText && fullText.length > synopsis.length + 30);
 
         html += `
           <div class="relative pl-8 md:pl-0 mb-8 group">
@@ -406,10 +567,22 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
                     </a>
                   </h3>
 
-                  <!-- Incident Synopsis -->
+                  <!-- Adaptive Summary (Crisp 1-2 sentences) -->
                   <p class="text-xs sm:text-[13px] text-slate-300 mt-2 leading-relaxed font-normal">
                     ${{synopsis}}
                   </p>
+
+                  <!-- Optional Expandable Full Abstract (collapsed by default) -->
+                  ${{hasFullText ? `
+                  <details class="mt-2 text-xs group/details">
+                    <summary class="cursor-pointer text-[11px] text-indigo-400 hover:text-indigo-300 font-medium select-none inline-flex items-center gap-1 transition-colors">
+                      <svg class="w-3 h-3 group-open/details:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                      <span>Full Abstract / Source</span>
+                    </summary>
+                    <div class="mt-2 p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 leading-relaxed font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">
+                      ${{fullText}}
+                    </div>
+                  </details>` : ''}}
 
                   <!-- Structured Analysis (Technical Mechanism & Safety Takeaway) -->
                   <div class="mt-3 pt-2.5 border-t border-slate-800/80 space-y-2">
