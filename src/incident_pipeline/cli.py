@@ -1,6 +1,7 @@
 """Command Line Interface for the AI Safety Incident & Threat Intelligence Pipeline."""
 
 import csv
+from datetime import datetime
 from pathlib import Path
 
 import typer
@@ -227,22 +228,120 @@ def export(
 @app.command()
 def timeline(
     output: str = typer.Option(
-        "reports/ai_safety_timeline.html",
+        "docs/index.html",
         "--output",
         "-o",
-        help="Output filepath for HTML timeline visualization",
+        help="Output filepath for HTML timeline visualization (default: docs/index.html for GitHub Pages)",
     ),
+    db_path: str = typer.Option("data/incidents.db", "--db", help="Path to SQLite database file"),
 ):
     """Generate an interactive HTML timeline of AI Safety incidents since ChatGPT."""
     from incident_pipeline.reporting.timeline_html import build_timeline_html
 
-    html_content = build_timeline_html()
+    html_content = build_timeline_html(db_path=db_path)
     out_path = Path(output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html_content, encoding="utf-8")
+
+    # Also keep a copy in reports/
+    reports_copy = Path("reports/ai_safety_timeline.html")
+    reports_copy.parent.mkdir(parents=True, exist_ok=True)
+    reports_copy.write_text(html_content, encoding="utf-8")
+
     console.print(
-        f"[bold green]Interactive AI Safety Timeline successfully generated:[/bold green] [white]{output}[/white]"
+        f"[bold green]Interactive AI Safety Timeline generated successfully at:[/bold green] [white]{output}[/white]"
     )
+
+
+@app.command()
+def serve(
+    port: int = typer.Option(8000, "--port", "-p", help="Port to serve the timeline on"),
+    html_path: str = typer.Option("docs/index.html", "--html", help="Path to HTML timeline file"),
+):
+    """Serve the interactive timeline locally and open it in the default web browser."""
+    import functools
+    import http.server
+    import socketserver
+    import webbrowser
+
+    out_path = Path(html_path).resolve()
+    if not out_path.exists():
+        from incident_pipeline.reporting.timeline_html import build_timeline_html
+
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(build_timeline_html(), encoding="utf-8")
+
+    directory = str(out_path.parent)
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=directory)
+
+    console.print(f"[bold green]Serving AI Safety Timeline locally on port {port}...[/bold green]")
+    url = f"http://localhost:{port}/{out_path.name}"
+    console.print(f"Opening browser at: [bold cyan]{url}[/bold cyan] (Press Ctrl+C to stop)\n")
+    webbrowser.open(url)
+
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Server stopped.[/yellow]")
+
+
+@app.command()
+def monitor(
+    interval: int = typer.Option(
+        3600, "--interval", "-i", help="Periodic scan interval in seconds (default: 3600s / 1 hour)"
+    ),
+    limit: int = typer.Option(20, "--limit", "-l", help="Number of records to fetch per source"),
+    db_path: str = typer.Option("data/incidents.db", "--db", help="Path to SQLite database file"),
+    timeline_path: str = typer.Option(
+        "docs/index.html", "--timeline", help="Path to update timeline HTML"
+    ),
+):
+    """Continuously monitor and ingest AI safety incidents on a recurring schedule."""
+    import time
+
+    from incident_pipeline.collectors.aiid import AIIDCollector
+    from incident_pipeline.collectors.arxiv import ArxivCollector
+    from incident_pipeline.collectors.rss import SafetyRSSCollector
+    from incident_pipeline.reporting.timeline_html import build_timeline_html
+
+    db = IncidentDatabase(db_path)
+    collectors = [ArxivCollector(), AIIDCollector(), SafetyRSSCollector()]
+
+    console.print(
+        f"[bold cyan]Starting AI Safety Continuous Monitoring Service (Interval: {interval}s)...[/bold cyan]"
+    )
+    try:
+        while True:
+            console.print(
+                f"\n[dim]{datetime.utcnow().isoformat()}[/dim] [bold yellow]Executing periodic ingestion scan...[/bold yellow]"
+            )
+            total_new = 0
+            for col in collectors:
+                try:
+                    records = col.collect(limit=limit)
+                    inserted, _ = db.save_records(records)
+                    total_new += inserted
+                except Exception as e:
+                    console.print(f"[red]Collector {col.name} encountered error: {e}[/red]")
+
+            console.print(
+                f"[green]Scan cycle complete. Discovered {total_new} new records.[/green]"
+            )
+            if total_new > 0 or not Path(timeline_path).exists():
+                t_path = Path(timeline_path)
+                t_path.parent.mkdir(parents=True, exist_ok=True)
+                t_path.write_text(build_timeline_html(db_path), encoding="utf-8")
+                console.print(
+                    f"[bold green]Updated timeline with new discoveries:[/bold green] {timeline_path}"
+                )
+
+            console.print(
+                f"[dim]Sleeping for {interval}s until next scan cycle... (Press Ctrl+C to terminate)[/dim]"
+            )
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Continuous monitoring stopped.[/yellow]")
 
 
 if __name__ == "__main__":

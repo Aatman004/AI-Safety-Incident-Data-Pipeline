@@ -1,9 +1,13 @@
 # AI Safety Incident & Threat Intelligence Pipeline
 
 [![CI](https://github.com/Aatman004/AI-Safety-Incident-Data-Pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Aatman004/AI-Safety-Incident-Data-Pipeline/actions/workflows/ci.yml)
+[![Daily Ingestion & Timeline Update](https://github.com/Aatman004/AI-Safety-Incident-Data-Pipeline/actions/workflows/scheduled_ingest.yml/badge.svg)](https://github.com/Aatman004/AI-Safety-Incident-Data-Pipeline/actions/workflows/scheduled_ingest.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
+> 🌐 **Live Interactive Timeline:** **[https://aatman004.github.io/AI-Safety-Incident-Data-Pipeline/](https://aatman004.github.io/AI-Safety-Incident-Data-Pipeline/)**  
+> *An intentional, fluid visual chronology tracking landmark AI Safety incidents, jailbreak discoveries, deceptive alignment observations, and governance milestones from the release of ChatGPT (Nov 2022) to 2026.*
 
 An automated data ingestion, threat taxonomy classification, and analytical storage pipeline that monitors global AI safety research, vulnerability reports, and near-miss incidents. Built to support empirical alignment research, risk trend analysis, and frontier safety governance. Also because I couldn't find an existing data pipeline.
 
@@ -115,11 +119,41 @@ incident-pipeline search "reward hacking" --category deception_reward_hacking
 incident-pipeline report --format markdown --output reports/ai_safety_briefing.md
 ```
 
-### 4. Export Structured Data
+### 4. Interactive Timeline & Local Dashboard
 ```bash
-# Export all records to CSV or JSONL for external research & dashboarding
+# Generate standalone interactive HTML timeline (merges database records with landmark chronology)
+incident-pipeline timeline --output docs/index.html
+
+# Launch local server and open timeline in your default browser at http://localhost:8000
+incident-pipeline serve --port 8000
+```
+
+### 5. Automated Periodic Monitoring Daemon
+```bash
+# Run continuous background ingestion daemon scanning arXiv & AIID every hour
+incident-pipeline monitor --interval 3600 --limit 20
+```
+
+### 6. Export Structured Data
+```bash
+# Export all records to CSV or JSON for external research & dashboarding
 incident-pipeline export --format csv --output data/incidents.csv
 ```
+
+---
+
+## Automated Ingestion & GitHub Pages Hosting
+
+The repository includes a GitHub Actions workflow (`.github/workflows/scheduled_ingest.yml`) that runs daily at `06:00 UTC`:
+1. Ingests fresh AI safety preprints and incident filings.
+2. Deduplicates and assigns risk taxonomy tags.
+3. Automatically rebuilds and deploys the live interactive timeline at `docs/index.html`.
+
+### Enabling GitHub Pages (1-Click)
+1. Go to your repository **Settings** -> **Pages**.
+2. Under **Build and deployment > Branch**, select `main` and folder `/docs`.
+3. Click **Save**. Your interactive timeline will be permanently hosted at:  
+   `https://aatman004.github.io/AI-Safety-Incident-Data-Pipeline/`
 
 ---
 

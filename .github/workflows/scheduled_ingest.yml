@@ -1,0 +1,48 @@
+name: Daily AI Safety Ingestion & Timeline Update
+
+on:
+  schedule:
+    # Runs automatically every day at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    # Allows manual trigger at any time from GitHub UI
+
+jobs:
+  ingest-and-update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Ingest recent AI safety research & incidents
+      run: |
+        incident-pipeline ingest --limit 20
+
+    - name: Rebuild interactive timeline HTML
+      run: |
+        incident-pipeline timeline --output docs/index.html
+
+    - name: Commit and push updated timeline
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add docs/ reports/ data/
+        if git diff --staged --quiet; then
+          echo "No new changes or incidents discovered in this cycle."
+        else
+          git commit -m "chore(automated): update AI safety incident data & timeline [skip ci]"
+          git push
+        fi
