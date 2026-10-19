@@ -39,8 +39,9 @@ def get_merged_timeline_events(db_path: Optional[str] = None) -> List[Dict[str, 
                         "severity": r.severity.value,
                         "source": r.source.value.upper(),
                         "url": r.url,
-                        "summary": r.summary,
-                        "impact": f"Classified as {r.severity.value.upper()} risk with {r.confidence_score * 100:.0f}% confidence.",
+                        "what_happened": r.summary,
+                        "mechanism": "Automated ingestion pipeline classification.",
+                        "takeaway": f"Safety impact classified as {r.severity.value.upper()} risk with {r.confidence_score * 100:.0f}% confidence.",
                         "tags": r.tags[:5] if r.tags else ["AI Safety"],
                     }
         except Exception:
@@ -74,7 +75,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
       font-family: 'JetBrains Mono', monospace;
     }}
 
-    /* Custom subtle scrollbar */
+    /* Subtle scrollbar */
     ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
     ::-webkit-scrollbar-track {{ background: transparent; }}
     ::-webkit-scrollbar-thumb {{ background: rgba(148, 163, 184, 0.2); border-radius: 9999px; }}
@@ -83,7 +84,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
     .timeline-spine::before {{
       content: '';
       position: absolute;
-      top: 2rem;
+      top: 1.5rem;
       bottom: 2rem;
       left: 1.25rem;
       width: 2px;
@@ -97,16 +98,15 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
     }}
 
     .glass-card {{
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(51, 65, 85, 0.6);
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
     }}
     .glass-card:hover {{
-      border-color: rgba(99, 102, 241, 0.5);
-      box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.55);
+      box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.18);
     }}
 
-    /* Subtle animation transitions */
     .filter-btn {{
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }}
@@ -122,7 +122,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
   </div>
 
   <!-- Header Banner -->
-  <header class="border-b border-slate-800/80 bg-slate-950/40 backdrop-blur-md sticky top-0 z-30">
+  <header class="border-b border-slate-800/80 bg-slate-950/50 backdrop-blur-md sticky top-0 z-30">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
@@ -144,7 +144,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
           <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
           <span>Curated by <strong class="text-white">Aatman Gupta</strong></span>
         </div>
-        <a href="https://github.com/Aatman004/AI-Safety-Incident-Data-Pipeline" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+        <a href="https://github.com/Aatman004/AI-Safety-Incident-Data-Pipeline" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
           <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path></svg>
           <span>Repository</span>
         </a>
@@ -163,7 +163,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
           <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">2022-2026</span>
         </div>
         <div class="text-2xl sm:text-3xl font-extrabold text-white mt-2" id="kpi-total">35</div>
-        <div class="text-xs text-slate-400 mt-1">Empirical incidents & papers</div>
+        <div class="text-xs text-slate-400 mt-1">Curated landmark events</div>
       </div>
 
       <div class="glass-card rounded-2xl p-4">
@@ -171,17 +171,17 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
           <span class="text-xs font-medium text-slate-400">Critical Severity</span>
           <span class="w-2 h-2 rounded-full bg-rose-500"></span>
         </div>
-        <div class="text-2xl sm:text-3xl font-extrabold text-rose-400 mt-2" id="kpi-critical">9</div>
+        <div class="text-2xl sm:text-3xl font-extrabold text-rose-400 mt-2" id="kpi-critical">10</div>
         <div class="text-xs text-slate-400 mt-1">High systemic safety risk</div>
       </div>
 
       <div class="glass-card rounded-2xl p-4">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-slate-400">Leading Threat</span>
+          <span class="text-xs font-medium text-slate-400">Prompt Injections</span>
           <span class="w-2 h-2 rounded-full bg-amber-500"></span>
         </div>
-        <div class="text-lg sm:text-xl font-bold text-white mt-2 truncate">Prompt Injection</div>
-        <div class="text-xs text-amber-400/90 mt-1">Direct & indirect injections</div>
+        <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 mt-2" id="kpi-injection">10</div>
+        <div class="text-xs text-slate-400 mt-1">Direct & indirect exploits</div>
       </div>
 
       <div class="glass-card rounded-2xl p-4">
@@ -206,7 +206,7 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
           <input
             type="text"
             id="search-input"
-            placeholder="Search keywords (e.g. Sleeper, GCG, Sandbagging, CAPTCHA)..."
+            placeholder="Search keyword (e.g. Sleeper, GCG, Sandbagging, CAPTCHA)..."
             class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
           />
         </div>
@@ -275,18 +275,6 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
 
   </main>
 
-  <!-- Incident Detail Modal Drawer -->
-  <div id="detail-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 max-w-2xl w-full rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-      <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
-      <div id="modal-content">
-        <!-- Injected by JS -->
-      </div>
-    </div>
-  </div>
-
   <script>
     const rawEvents = {incidents_json};
     let events = [...rawEvents];
@@ -314,11 +302,20 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
     function updateKPIs() {{
       const total = rawEvents.length;
       const criticalCount = rawEvents.filter(e => e.severity === 'critical').length;
+      const injectionCount = rawEvents.filter(e => e.category === 'prompt_injection').length;
       const deceptionCount = rawEvents.filter(e => e.category === 'deception_reward_hacking').length;
 
       document.getElementById('kpi-total').textContent = total;
       document.getElementById('kpi-critical').textContent = criticalCount;
+      document.getElementById('kpi-injection').textContent = injectionCount;
       document.getElementById('kpi-deception').textContent = deceptionCount;
+    }}
+
+    function filterByTag(tag) {{
+      searchQuery = tag;
+      searchInput.value = tag;
+      render();
+      window.scrollTo({{ top: searchInput.offsetTop - 90, behavior: 'smooth' }});
     }}
 
     function render() {{
@@ -328,11 +325,18 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
         const matchSev = activeSeverity === 'all' || item.severity === activeSeverity;
 
         const q = searchQuery.toLowerCase().trim();
+        const what = (item.what_happened || item.summary || '').toLowerCase();
+        const mech = (item.mechanism || '').toLowerCase();
+        const take = (item.takeaway || item.impact || '').toLowerCase();
+        const src = (item.source || '').toLowerCase();
+
         const matchSearch = !q ||
           item.title.toLowerCase().includes(q) ||
-          item.summary.toLowerCase().includes(q) ||
-          item.impact.toLowerCase().includes(q) ||
-          item.tags.some(t => t.toLowerCase().includes(q));
+          what.includes(q) ||
+          mech.includes(q) ||
+          take.includes(q) ||
+          src.includes(q) ||
+          (item.tags && item.tags.some(t => t.toLowerCase().includes(q)));
 
         return matchYear && matchCat && matchSev && matchSearch;
       }});
@@ -363,65 +367,82 @@ def build_timeline_html(db_path: Optional[str] = "data/incidents.db") -> str:
       filtered.forEach((item, index) => {{
         const isEven = index % 2 === 0;
         const sev = severityConfig[item.severity] || severityConfig.medium;
+        const synopsis = item.what_happened || item.summary || '';
+        const mechanism = item.mechanism || '';
+        const takeaway = item.takeaway || item.impact || '';
 
         html += `
-          <div class="relative pl-10 md:pl-0 mb-10 group">
-            <!-- Node Pin -->
-            <div class="absolute left-3.5 md:left-1/2 top-5 -translate-x-1/2 w-4 h-4 rounded-full ${{sev.dot}} ring-4 flex items-center justify-center z-10 transition-transform duration-300 group-hover:scale-125">
+          <div class="relative pl-8 md:pl-0 mb-8 group">
+            <!-- Spine Node Indicator -->
+            <div class="absolute left-2.5 md:left-1/2 top-4 -translate-x-1/2 w-4 h-4 rounded-full ${{sev.dot}} ring-4 flex items-center justify-center z-10 transition-transform duration-300 group-hover:scale-125">
               <span class="w-1.5 h-1.5 rounded-full bg-white shadow"></span>
             </div>
 
             <!-- Content Card -->
             <div class="md:grid md:grid-cols-2 md:gap-10 items-start">
               <div class="${{isEven ? 'md:pr-10' : 'md:col-start-2 md:pl-10'}}">
-                <div class="glass-card rounded-2xl p-5 hover:-translate-y-0.5 transition-all duration-300">
+                <div class="glass-card rounded-2xl p-4 sm:p-5 hover:-translate-y-0.5 transition-all duration-300 border border-slate-800 hover:border-indigo-500/50">
                   
-                  <!-- Top Badge Line -->
-                  <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                  <!-- Metadata Header -->
+                  <div class="flex items-center justify-between gap-2 mb-2">
                     <div class="flex items-center gap-2">
-                      <span class="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                      <span class="font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
                         ${{item.date}}
                       </span>
                       <span class="text-[11px] font-medium text-slate-400">
                         ${{item.category_label || item.category}}
                       </span>
                     </div>
-                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${{sev.badge}}">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${{sev.badge}}">
                       ${{item.severity}}
                     </span>
                   </div>
 
-                  <!-- Title -->
-                  <h3 class="text-base sm:text-lg font-bold text-white leading-snug group-hover:text-indigo-300 transition-colors">
-                    <a href="${{item.url}}" target="_blank" class="inline-flex items-center gap-1.5">
-                      ${{item.title}}
-                      <svg class="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                  <!-- Incident Title -->
+                  <h3 class="text-base font-bold text-white leading-snug group-hover:text-indigo-300 transition-colors">
+                    <a href="${{item.url}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 hover:underline">
+                      <span>${{item.title}}</span>
+                      <svg class="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </a>
                   </h3>
 
-                  <!-- Source -->
-                  <div class="text-xs text-slate-400 mt-1">
-                    Origin: <span class="text-slate-300 font-medium">${{item.source}}</span>
-                  </div>
-
-                  <!-- Summary -->
-                  <p class="text-xs sm:text-sm text-slate-300 mt-3 leading-relaxed">
-                    ${{item.summary}}
+                  <!-- Incident Synopsis -->
+                  <p class="text-xs sm:text-[13px] text-slate-300 mt-2 leading-relaxed font-normal">
+                    ${{synopsis}}
                   </p>
 
-                  <!-- Safety Takeaway / Implication -->
-                  <div class="mt-3.5 pt-3 border-t border-slate-800/80 bg-slate-950/30 -mx-5 -mb-5 p-4 rounded-b-2xl">
-                    <div class="text-xs">
-                      <span class="font-semibold text-amber-400/90 flex items-center gap-1">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Safety Implication:
-                      </span>
-                      <span class="text-slate-300 mt-1 block">${{item.impact}}</span>
-                    </div>
+                  <!-- Structured Analysis (Technical Mechanism & Safety Takeaway) -->
+                  <div class="mt-3 pt-2.5 border-t border-slate-800/80 space-y-2">
+                    ${{mechanism ? `
+                    <div class="rounded-xl bg-slate-900/80 border border-slate-800/80 p-2.5">
+                      <div class="text-[10px] uppercase font-bold tracking-wider text-indigo-400 flex items-center gap-1.5 mb-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                        Root Mechanism
+                      </div>
+                      <div class="text-xs text-slate-300 leading-normal font-normal">
+                        ${{mechanism}}
+                      </div>
+                    </div>` : ''}}
 
-                    <!-- Tags -->
-                    <div class="flex flex-wrap gap-1.5 mt-3">
-                      ${{item.tags.map(t => `<span class="text-[11px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/60">#${{t}}</span>`).join('')}}
+                    ${{takeaway ? `
+                    <div class="rounded-xl bg-slate-900/80 border border-slate-800/80 p-2.5">
+                      <div class="text-[10px] uppercase font-bold tracking-wider text-amber-400 flex items-center gap-1.5 mb-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                        Safety Takeaway
+                      </div>
+                      <div class="text-xs text-slate-300 leading-normal font-normal">
+                        ${{takeaway}}
+                      </div>
+                    </div>` : ''}}
+                  </div>
+
+                  <!-- Footer: Source & Interactive Tags -->
+                  <div class="mt-3 pt-2 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+                    <div class="truncate max-w-[220px]" title="${{item.source}}">
+                      <span class="text-slate-400">Origin:</span> <span class="text-slate-300 font-medium">${{item.source}}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1">
+                      ${{item.tags ? item.tags.map(t => `<button onclick="filterByTag('${{t}}')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-indigo-300 border border-slate-700/60 transition-colors">#${{t}}</button>`).join('') : ''}}
                     </div>
                   </div>
 
